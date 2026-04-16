@@ -1,0 +1,69 @@
+pipeline {
+
+    agent any
+
+    environment {
+        DOCKERHUB_USER  = 'ton_username_dockerhub'
+        IMAGE_NAME      = 'flask-app-mbassi-elessa'
+        IMAGE_TAG       = 'latest'
+        GITHUB_REPO     = 'https://github.com/TON_USERNAME/flask-app-mbassi-elessa.git'
+        DOCKERHUB_CREDS = credentials('dockerhub-credentials')
+    }
+
+    stages {
+
+        // ─────────────────────────────────────────
+        // ÉTAPE 1 : Clonage
+        // Clone app.py et requirements.txt depuis GitHub
+        // ─────────────────────────────────────────
+        stage('Clonage') {
+            steps {
+                echo '=== Clonage du dépôt GitHub ==='
+                git branch: 'main', url: "${GITHUB_REPO}"
+                echo '=== Fichiers récupérés ==='
+                sh 'ls -la'
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // ÉTAPE 2 : Image
+        // Construit l'image Docker
+        // ─────────────────────────────────────────
+        stage('Image') {
+            steps {
+                echo '=== Construction de l image Docker ==='
+                sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                echo '=== Image construite ==='
+                sh "docker images | grep ${IMAGE_NAME}"
+            }
+        }
+
+        // ─────────────────────────────────────────
+        // ÉTAPE 3 : Publication
+        // Pousse l'image sur DockerHub
+        // ─────────────────────────────────────────
+        stage('Publication') {
+            steps {
+                echo '=== Publication sur DockerHub ==='
+                sh """
+                    echo ${DOCKERHUB_CREDS_PSW} | docker login -u ${DOCKERHUB_CREDS_USR} --password-stdin
+                    docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker logout
+                """
+                echo '=== Image publiée sur DockerHub ==='
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline exécuté avec succès !'
+        }
+        failure {
+            echo '❌ Échec du pipeline — vérifiez les logs'
+        }
+        always {
+            sh "docker rmi ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} || true"
+        }
+    }
+}
