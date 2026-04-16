@@ -1,0 +1,117 @@
+# ============================================================
+# HISTORIQUE DES COMMANDES — TP1 Docker
+# Auteur  : Mbassi Elessa | KEYCE M1 IABD
+# Projet  : flask-app-mbassi-elessa
+# ============================================================
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 0 — Vérification Docker
+# ────────────────────────────────────────────────
+
+docker --version
+# → Docker version 24.x.x, build ...
+
+docker info
+# → Vérifie que le daemon Docker tourne
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 1 — Résolution erreur permission Docker
+# ────────────────────────────────────────────────
+
+# Ajout de l'utilisateur au groupe docker
+sudo usermod -aG docker $USER
+
+# Application immédiate du changement
+newgrp docker
+
+# Vérification
+docker ps
+# → Aucune erreur de permission
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 2 — Création du dossier de travail
+# ────────────────────────────────────────────────
+
+cd ~/devops_keyce
+mkdir Flask_app
+cd Flask_app
+
+# Vérification des fichiers présents
+ls
+# → app.py    Dockerfile    requirements.txt
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 3 — Construction de l'image Docker
+# ────────────────────────────────────────────────
+
+docker build -t franciskago-flask-app .
+# → [1/5] FROM python:3.9-slim        ✅
+# → [2/5] WORKDIR /app                ✅
+# → [3/5] COPY requirements.txt       ✅
+# → [4/5] RUN pip install flask       ✅
+# → [5/5] COPY app.py                 ✅
+# → Successfully built                ✅
+
+# Vérification de l'image créée
+docker images
+# → REPOSITORY              TAG      SIZE
+# → franciskago-flask-app   latest   ~130MB
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 4 — Exécution du conteneur
+# ────────────────────────────────────────────────
+
+docker run -d -p 5000:5000 --name franciskago-container franciskago-flask-app
+# → bf17ce345a5bc11ff718beaab1e40ba9... (ID du conteneur)
+
+# Vérification que le conteneur tourne
+docker ps
+# → CONTAINER ID   IMAGE                    STATUS
+# → bf17ce345a5b   franciskago-flask-app    Up X seconds
+
+# Accès à l'application dans le navigateur
+# → http://localhost:5000 ✅
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 5 — Publication sur DockerHub
+# ────────────────────────────────────────────────
+
+# Connexion à DockerHub
+docker login
+# → Username: kevinmbassi
+# → Password: (token DockerHub)
+# → Login Succeeded ✅
+
+# Tag de l'image
+docker tag franciskago-flask-app kevinmbassi/flask-app-mbassi-elessa:latest
+
+# Push sur DockerHub
+docker push kevinmbassi/flask-app-mbassi-elessa:latest
+# → Image disponible sur :
+# → https://hub.docker.com/r/kevinmbassi/flask-app-mbassi-elessa
+
+
+# ────────────────────────────────────────────────
+# ÉTAPE 6 — Push sur GitHub
+# ────────────────────────────────────────────────
+
+# Configuration de l'identité Git
+git config --global user.email "ton_email@gmail.com"
+git config --global user.name "Mbassi Elessa"
+
+# Initialisation du repo Git
+git init
+git add .
+git commit -m "TP1 : app Flask, Dockerfile, requirements"
+
+# Connexion au repo GitHub
+git remote add origin https://github.com/Rodolphe-10/flask-app-mbassi-elessa.git
+git branch -M main
+git push -u origin main
+# → Les fichiers sont visibles sur GitHub ✅
